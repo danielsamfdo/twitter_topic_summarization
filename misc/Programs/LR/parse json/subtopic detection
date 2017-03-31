@@ -1,0 +1,15 @@
+import nltk
+#-----------------------------------------
+f = file("xxx.txt", "r")
+lines = f.readlines()
+for line in lines:
+    X=line.split(" ");
+    Set=set(X);
+    words=[];
+    for word in Set:
+        for charac in word:
+            if(charac.isalpha()):
+                words.append(word);
+    print words
+
+                

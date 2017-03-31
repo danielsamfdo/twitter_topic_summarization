@@ -1,0 +1,1 @@
+{"text": "(S\n  bjp/NN\n  to/TO\n  release/VB\n  its/PRP$\n  first/JJ\n  list/NN\n  on/IN\n  monday/NN\n  :/:\n  bjp/NN\n  should/MD\n  invite/VB\n  voter/NN\n  '/''\n  s/NNS\n  opinion/NN\n  before/IN\n  nomination/NN\n  :/:\n  baba/NN\n  ramdev/NN\n  should/MD\n  play/VB\n  main/JJ\n  role/NN\n  in/IN\n  selection/NN)"}

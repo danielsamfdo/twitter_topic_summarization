@@ -1,0 +1,1 @@
+{"VP": ["may join", "to fight"], "NP": ["fight", "lok sabha polls http :// t", "mumbai police commissioner satyapal singh resigns", "newsnationtv", "sabha polls"], "CARDINAL": ["co /"], "LOCATION": ["newsnationtv", "rt"], "MEASURE": [":// t", "fpwixgnwds"], "DURATION": ["sabha polls http", "singh resigns"]}

@@ -1,0 +1,24 @@
+Degree Centrality-Local Popularity
+Closeness Centrality-Proximity of actors
+Betweenness Centrality
+EigenVector Centrality
+
+
+http://www.slideshare.net/ereteog/social-network-analysis-5800120
+http://www.slideshare.net/persuasion/facebook-network-analysis-using-gephi-11390089
+http://www.slideshare.net/gcheliotis/social-network-analysis-3273045
+http://www.slideshare.net/Verkostoanatomia/visualize-your-twitter-network
+
+http://schoolofdata.org/2013/04/25/social-network-analysis-for-journalists-using-the-twitter-api/
+
+http://strata.oreilly.com/2010/12/graph-your-twitter-network.html
+
+http://exploreyourdata.wordpress.com/2013/07/29/gephi-curated-list-of-tutorials/
+
+http://www.forbes.com/sites/markfidelman/2013/07/11/look-out-klout-these-twitter-influencer-maps-are-amazing/
+
+http://www.wolframalpha.com/facebook/
+
+http://social-dynamics.org/twitter-network-data/
+
+no 7 , casa major road, egmore ,chennai -8 ,near don bosco school ( opp to guildors 

@@ -1,0 +1,1 @@
+{"text": "(S\n  rt/NN\n  @/IN\n  newsnationtv/NN\n  :/:\n  mumbai/NN\n  police/NNS\n  commissioner/NN\n  satyapal/NN\n  singh/NN\n  resigns/NNS\n  ,/,\n  may/MD\n  join/VB\n  bjp/NN\n  to/TO\n  fight/NN\n  lok/NN\n  sabha/NN\n  polls/NNS\n  http/VBP\n  :///:\n  t/NN\n  ./.\n  co/NN\n  //:\n  fpwixgnwds/NNS)"}

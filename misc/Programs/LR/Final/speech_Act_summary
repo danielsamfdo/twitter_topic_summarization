@@ -1,0 +1,30 @@
+import re;
+import json;
+import urllib
+import urllib2
+import time
+from nltk.tokenize import word_tokenize;
+from nltk.tag import pos_tag;
+import nltk;
+from nltk.chunk import ne_chunk
+from gensim import corpora, models, similarities
+import enchant
+#------------------------------------------------
+pi=0.25;
+tau=0.01;
+English_Checker=enchant.Dict('en_US');
+#-------------------------------------------------
+EIcons=[];
+Punctuations=[',',';','.']
+PHRASES_ALL=[];
+TEXT=[];
+Shortforms=[];      #short forms of chat language
+Fullforms=[];       #full forms of corresponding language
+tweets_text = []    # We will store the text of every tweet in this list
+tweets_rtcnt = []   # Location of every tweet (free text field - not always accurate or given)
+tweets_created_at=[]
+URLPATTERN="(https?://(www[.])?[a-z0-9A-Z]+[.](com|in|co[.]uk|org[.]in|co)/[a-zA-Z0-9]*)";
+HASHPATTERN="#[a-zA-Z0-9]*";
+USERPATTERN="@[a-zA-Z0-9_]+";
+MAJOR=[];
+#--------------------------------------

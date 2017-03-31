@@ -1,0 +1,4 @@
+import nltk;
+
+def intersection(sent1,sent2):
+    

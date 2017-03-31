@@ -1,0 +1,6 @@
+http://hortonworks.com/hadoop-tutorial/using-spring-xd-to-stream-tweets-to-hadoop-for-sentiment-analysis/
+//HADOOP STREAM TWEETS
+
+http://bcomposes.wordpress.com/2013/02/09/using-twitter4j-with-scala-to-access-streaming-tweets/
+
+//access streaming tweets

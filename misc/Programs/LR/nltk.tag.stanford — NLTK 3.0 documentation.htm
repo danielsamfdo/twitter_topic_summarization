@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0051)http://www.nltk.org/_modules/nltk/tag/stanford.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    
+    <title>nltk.tag.stanford — NLTK 3.0 documentation</title>
+    
+    <link rel="stylesheet" href="./nltk.tag.stanford — NLTK 3.0 documentation_files/agogo.css" type="text/css">
+    <link rel="stylesheet" href="./nltk.tag.stanford — NLTK 3.0 documentation_files/pygments.css" type="text/css">
+    
+    <script type="text/javascript" async="" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/ga.js"></script><script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '3.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script><style type="text/css"></style><style type="text/css"></style>
+    <script type="text/javascript" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/jquery.js"></script>
+    <script type="text/javascript" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/underscore.js"></script>
+    <script type="text/javascript" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/doctools.js"></script>
+    <link rel="top" title="NLTK 3.0 documentation" href="http://www.nltk.org/index.html">
+    <link rel="up" title="nltk.tag" href="http://www.nltk.org/_modules/nltk/tag.html"> 
+  <style type="text/css" media="screen">#dddContent {visibility:hidden}</style><style type="text/css" media="screen">#easyInlineSwf {visibility:hidden}</style><style type="text/css"></style><script type="text/javascript" async="" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/mixpanel-2.1.min.js"></script></head>
+  <body>
+    <div class="header-wrapper">
+      <div class="header">
+        <div class="headertitle"><a href="http://www.nltk.org/index.html">NLTK 3.0 documentation</a></div>
+        <div class="rel">
+          <a href="http://www.nltk.org/py-modindex.html" title="Python Module Index">modules</a> |
+          <a href="http://www.nltk.org/genindex.html" title="General Index" accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for nltk.tag.stanford</h1><div class="highlight"><pre><span class="c"># -*- coding: utf-8 -*-</span>
+<span class="c"># Natural Language Toolkit: Interface to the Stanford NER-tagger</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2001-2013 NLTK Project</span>
+<span class="c"># Author: Nitin Madnani &lt;nmadnani@ets.org&gt;</span>
+<span class="c">#         Rami Al-Rfou' &lt;ralrfou@cs.stonybrook.edu&gt;</span>
+<span class="c"># URL: &lt;http://nltk.org/&gt;</span>
+<span class="c"># For license information, see LICENSE.TXT</span>
+
+<span class="sd">"""</span>
+<span class="sd">A module for interfacing with the Stanford taggers.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">PIPE</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">nltk.internals</span> <span class="kn">import</span> <span class="n">find_file</span><span class="p">,</span> <span class="n">find_jar</span><span class="p">,</span> <span class="n">config_java</span><span class="p">,</span> <span class="n">java</span><span class="p">,</span> <span class="n">_java_options</span>
+<span class="kn">from</span> <span class="nn">nltk.tag.api</span> <span class="kn">import</span> <span class="n">TaggerI</span>
+<span class="kn">from</span> <span class="nn">nltk</span> <span class="kn">import</span> <span class="n">compat</span>
+
+<span class="n">_stanford_url</span> <span class="o">=</span> <span class="s">'http://nlp.stanford.edu/software'</span>
+
+<div class="viewcode-block" id="StanfordTagger"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.StanfordTagger">[docs]</a><span class="k">class</span> <span class="nc">StanfordTagger</span><span class="p">(</span><span class="n">TaggerI</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    An interface to Stanford taggers. Subclasses must define:</span>
+
+<span class="sd">    - ``_cmd`` property: A property that returns the command that will be</span>
+<span class="sd">      executed.</span>
+<span class="sd">    - ``_SEPARATOR``: Class constant that represents that character that</span>
+<span class="sd">      is used to separate the tokens from their tags.</span>
+<span class="sd">    - ``_JAR`` file: Class constant that represents the jar file name.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_SEPARATOR</span> <span class="o">=</span> <span class="s">''</span>
+    <span class="n">_JAR</span> <span class="o">=</span> <span class="s">''</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_model</span><span class="p">,</span> <span class="n">path_to_jar</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s">'ascii'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">java_options</span><span class="o">=</span><span class="s">'-mx1000m'</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_JAR</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">'The StanfordTagger class is not meant to be '</span>
+                    <span class="s">'instanciated directly. Did you mean POS- or NERTagger?'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stanford_jar</span> <span class="o">=</span> <span class="n">find_jar</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_JAR</span><span class="p">,</span> <span class="n">path_to_jar</span><span class="p">,</span>
+                <span class="n">searchpath</span><span class="o">=</span><span class="p">(),</span> <span class="n">url</span><span class="o">=</span><span class="n">_stanford_url</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stanford_model</span> <span class="o">=</span> <span class="n">find_file</span><span class="p">(</span><span class="n">path_to_model</span><span class="p">,</span>
+                <span class="n">env_vars</span><span class="o">=</span><span class="p">(</span><span class="s">'STANFORD_MODELS'</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">java_options</span> <span class="o">=</span> <span class="n">java_options</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="StanfordTagger.tag"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.StanfordTagger.tag">[docs]</a>    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_tag</span><span class="p">([</span><span class="n">tokens</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="StanfordTagger.batch_tag"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.StanfordTagger.batch_tag">[docs]</a>    <span class="k">def</span> <span class="nf">batch_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentences</span><span class="p">):</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span>
+        <span class="n">default_options</span> <span class="o">=</span> <span class="s">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_java_options</span><span class="p">)</span>
+        <span class="n">config_java</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">java_options</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="c"># Create a temporary input file</span>
+        <span class="n">_input_fh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">'-encoding'</span><span class="p">,</span> <span class="n">encoding</span><span class="p">])</span>
+
+        <span class="c"># Write the actual sentences to the temporary input file</span>
+        <span class="n">_input_fh</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">_input_fh</span><span class="p">,</span> <span class="s">'wb'</span><span class="p">)</span>
+        <span class="n">_input</span> <span class="o">=</span> <span class="s">'</span><span class="se">\n</span><span class="s">'</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="s">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_input</span><span class="p">,</span> <span class="n">compat</span><span class="o">.</span><span class="n">text_type</span><span class="p">)</span> <span class="ow">and</span> <span class="n">encoding</span><span class="p">:</span>
+            <span class="n">_input</span> <span class="o">=</span> <span class="n">_input</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="n">_input_fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span>
+        <span class="n">_input_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c"># Run the tagger and get the output</span>
+        <span class="n">stanpos_output</span><span class="p">,</span> <span class="n">_stderr</span> <span class="o">=</span> <span class="n">java</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cmd</span><span class="p">,</span><span class="n">classpath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stanford_jar</span><span class="p">,</span> \
+                                                       <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">stanpos_output</span> <span class="o">=</span> <span class="n">stanpos_output</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">compat</span><span class="o">.</span><span class="n">PY3</span><span class="p">)</span> <span class="ow">and</span> <span class="n">encoding</span> <span class="o">==</span> <span class="s">'ascii'</span><span class="p">:</span>
+            <span class="n">stanpos_output</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">stanpos_output</span><span class="p">)</span>
+
+        <span class="c"># Delete the temporary file</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span><span class="p">)</span>
+
+        <span class="c"># Return java configurations to their default values</span>
+        <span class="n">config_java</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">default_options</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">stanpos_output</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="StanfordTagger.parse_output"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.StanfordTagger.parse_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="c"># Output the tagged sentences</span>
+        <span class="n">tagged_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tagged_sentence</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">):</span>
+            <span class="n">sentence</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">tagged_word</span> <span class="ow">in</span> <span class="n">tagged_sentence</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                <span class="n">word_tags</span> <span class="o">=</span> <span class="n">tagged_word</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_SEPARATOR</span><span class="p">)</span>
+                <span class="n">sentence</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s">''</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">word_tags</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">word_tags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="n">tagged_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tagged_sentences</span>
+</div></div>
+<div class="viewcode-block" id="POSTagger"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.POSTagger">[docs]</a><span class="k">class</span> <span class="nc">POSTagger</span><span class="p">(</span><span class="n">StanfordTagger</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A class for pos tagging with Stanford Tagger. The input is the paths to:</span>
+<span class="sd">     - a model trained on training data</span>
+<span class="sd">     - (optionally) the path to the stanford tagger jar file. If not specified here,</span>
+<span class="sd">       then this jar file must be specified in the CLASSPATH envinroment variable.</span>
+<span class="sd">     - (optionally) the encoding of the training data (default: ASCII)</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; from nltk.tag.stanford import POSTagger</span>
+<span class="sd">        &gt;&gt;&gt; st = POSTagger('/usr/share/stanford-postagger/models/english-bidirectional-distsim.tagger',</span>
+<span class="sd">        ...                '/usr/share/stanford-postagger/stanford-postagger.jar') # doctest: +SKIP</span>
+<span class="sd">        &gt;&gt;&gt; st.tag('What is the airspeed of an unladen swallow ?'.split()) # doctest: +SKIP</span>
+<span class="sd">        [('What', 'WP'), ('is', 'VBZ'), ('the', 'DT'), ('airspeed', 'NN'), ('of', 'IN'), ('an', 'DT'), ('unladen', 'JJ'), ('swallow', 'VB'), ('?', '.')]</span>
+<span class="sd">    """</span>
+
+    <span class="n">_SEPARATOR</span> <span class="o">=</span> <span class="s">'_'</span>
+    <span class="n">_JAR</span> <span class="o">=</span> <span class="s">'stanford-postagger.jar'</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">POSTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">'edu.stanford.nlp.tagger.maxent.MaxentTagger'</span><span class="p">,</span> \
+                <span class="s">'-model'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stanford_model</span><span class="p">,</span> <span class="s">'-textFile'</span><span class="p">,</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span><span class="p">,</span> <span class="s">'-tokenize'</span><span class="p">,</span> <span class="s">'false'</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="NERTagger"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.NERTagger">[docs]</a><span class="k">class</span> <span class="nc">NERTagger</span><span class="p">(</span><span class="n">StanfordTagger</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    A class for ner tagging with Stanford Tagger. The input is the paths to:</span>
+
+<span class="sd">    - a model trained on training data</span>
+<span class="sd">    - (optionally) the path to the stanford tagger jar file. If not specified here,</span>
+<span class="sd">      then this jar file must be specified in the CLASSPATH envinroment variable.</span>
+<span class="sd">    - (optionally) the encoding of the training data (default: ASCII)</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">        &gt;&gt;&gt; from nltk.tag.stanford import NERTagger</span>
+<span class="sd">        &gt;&gt;&gt; st = NERTagger('/usr/share/stanford-ner/classifiers/all.3class.distsim.crf.ser.gz',</span>
+<span class="sd">        ...                '/usr/share/stanford-ner/stanford-ner.jar') # doctest: +SKIP</span>
+<span class="sd">        &gt;&gt;&gt; st.tag('Rami Eid is studying at Stony Brook University in NY'.split()) # doctest: +SKIP</span>
+<span class="sd">        [('Rami', 'PERSON'), ('Eid', 'PERSON'), ('is', 'O'), ('studying', 'O'),</span>
+<span class="sd">         ('at', 'O'), ('Stony', 'ORGANIZATION'), ('Brook', 'ORGANIZATION'),</span>
+<span class="sd">         ('University', 'ORGANIZATION'), ('in', 'O'), ('NY', 'LOCATION')]</span>
+<span class="sd">    """</span>
+
+    <span class="n">_SEPARATOR</span> <span class="o">=</span> <span class="s">'/'</span>
+    <span class="n">_JAR</span> <span class="o">=</span> <span class="s">'stanford-ner.jar'</span>
+    <span class="n">_FORMAT</span> <span class="o">=</span> <span class="s">'slashTags'</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NERTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s">'edu.stanford.nlp.ie.crf.CRFClassifier'</span><span class="p">,</span> \
+                <span class="s">'-loadClassifier'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stanford_model</span><span class="p">,</span> <span class="s">'-textFile'</span><span class="p">,</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span><span class="p">,</span> <span class="s">'-outputFormat'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FORMAT</span><span class="p">]</span>
+
+<div class="viewcode-block" id="NERTagger.parse_output"><a class="viewcode-back" href="http://www.nltk.org/api/nltk.tag.html#nltk.tag.stanford.NERTagger.parse_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_FORMAT</span> <span class="o">==</span> <span class="s">'slashTags'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">NERTagger</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">parse_output</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+      <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">doctest</span>
+    <span class="n">doctest</span><span class="o">.</span><span class="n">testmod</span><span class="p">(</span><span class="n">optionflags</span><span class="o">=</span><span class="n">doctest</span><span class="o">.</span><span class="n">NORMALIZE_WHITESPACE</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table Of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="http://www.nltk.org/news.html">NLTK News</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://www.nltk.org/install.html">Installing NLTK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://www.nltk.org/data.html">Installing NLTK Data</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/nltk/nltk/wiki">Wiki</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://www.nltk.org/api/nltk.html">API</a></li>
+<li class="toctree-l1"><a class="reference external" href="http://nltk.org/howto">HOWTO</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/nltk">NLTK Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http://www.nltk.org/team.html">Team NLTK</a></li>
+</ul>
+
+          <h3 style="margin-top: 1.5em;">Search</h3>
+          <form class="search" action="http://www.nltk.org/search.html" method="get">
+            <input type="text" name="q">
+            <input type="submit" value="Go">
+            <input type="hidden" name="check_keywords" value="yes">
+            <input type="hidden" name="area" value="default">
+          </form>
+          <p class="searchtip" style="font-size: 90%">
+            Enter search terms or a module, class or function name.
+          </p>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <a href="http://www.nltk.org/py-modindex.html" title="Python Module Index">modules</a> |
+          <a href="http://www.nltk.org/genindex.html" title="General Index">index</a>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer">
+        © Copyright 2013, NLTK Project.
+      Last updated on Nov 05, 2013.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b3.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  
+<script type="text/javascript" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/tv-classic-fg.js"></script><div id="dropdowndeals" style="position: fixed; top: 0px; right: 11px; width: 155px; height: 1px; z-index: 2147483647;"><object type="application/x-shockwave-flash" style="outline: none; visibility: visible;" data="http://wac.edgecastcdn.net/800952/a1001/App/DddWrapper.swf?c=6" width="100%" height="100%" id="dddContent"><param name="menu" value="false"><param name="allowScriptAccess" value="always"><param name="wmode" value="transparent"><param name="flashvars" value="domain=www.nltk.org&amp;protocol=http:&amp;clientId=7e5b7c1c-7180-4292-a35f-7d3bbd4238db&amp;appDomain=wac.edgecastcdn.net/800952/a1001&amp;serviceDomain=c.couponsvc.com&amp;spriteUrl=//wac.edgecastcdn.net/800952/5cec4278-1195-45a0-b8fe-1a0a648f0a1b-www/Asset/App/Deals/Sprite&amp;helpLink=http://www.linkidoo.biz/Deals&amp;client=DealsBar&amp;changeHeightMethod=DealsBar.changeHeight&amp;changePositionMethod=DealsBar.changePosition"></object></div><div style="position: absolute; z-index: 2147483647; width: 1px; height: 1px; left: -1000px; top: -1000px;"><object type="application/x-shockwave-flash" style="outline: none; visibility: visible;" data="http://wac.edgecastcdn.net/800952/a1003/app/easyInline.swf" width="100%" height="100%" id="easyInlineSwf"><param name="menu" value="false"><param name="allowScriptAccess" value="always"><param name="wmode" value="transparent"><param name="flashvars" value="supportUrl=http://www.linkidoo.biz/inline#Vendo&amp;baseUrl=//wac.edgecastcdn.net/800952/a1003&amp;productName=Vendo"></object></div><div id="gsdfcdiv"><iframe src="./nltk.tag.stanford — NLTK 3.0 documentation_files/gsd.htm" style="width: 0px; height: 0px; display: none;"></iframe><iframe src="./nltk.tag.stanford — NLTK 3.0 documentation_files/gsd.htm" style="width: 0px; height: 0px; display: none;"></iframe><iframe src="./nltk.tag.stanford — NLTK 3.0 documentation_files/gsd(1).htm" style="width: 0px; height: 0px; display: none;"></iframe></div><script type="text/javascript" src="http://topictorch.netseer.com/dsatserving2/servlet/BannerServer?rt=jsonp,bbbrain.relatedTerms.processData&impt=11&imps=23&tlid=22511&url=http%3A%2F%2Fwww.nltk.org%2F_modules%2Fnltk%2Ftag%2Fstanford.html&ref=http%3A%2F%2Fnlp.stanford.edu%2Fsoftware%2FCRF-NER.shtml&ua=Mozilla/5.0%20%28Windows%20NT%206.1%3B%20WOW64%29%20AppleWebKit/537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome/32.0.1700.107%20Safari/537.36&ip=122.174.151.177&evid=seh7e5b7c1c71804292a35f7d3bbd4&params=segment%3Did49899&favi=1&cimg=128"></script><script type="text/javascript" src="http://js.myinfotopia.com/trustBanner.js"></script><iframe id="pu-bg-LinkiDoo" src="./nltk.tag.stanford — NLTK 3.0 documentation_files/popup.htm" style="display:none; z-index: 2147483647; border: none;"></iframe></body></html>

@@ -1,0 +1,1 @@
+{"VP": ["should invite", "should play", "to release"], "PERSON": ["voter"], "PP": ["before", "in", "on"], "CARDINAL": ["baba"], "LOCATION": ["bjp", "nomination"], "DATE": ["monday :"], "NP": ["baba ramdev", "bjp", "its first list", "main role", "monday", "nomination", "ramdev", "release", "s opinion", "selection", "voter"]}
